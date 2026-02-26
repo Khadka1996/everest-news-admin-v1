@@ -203,7 +203,7 @@ const ArticleEnglish = () => {
 
         <div className="form-group">
         <Typography variant="h4" className="mb-2 ">
-         Photo
+         Photo <span style={{ color: 'red', fontWeight: 'bold' }}>*</span>
             </Typography>             
             <input
             type="file"
@@ -226,6 +226,12 @@ const ArticleEnglish = () => {
           )}
         </div>
 
+        {error && (
+          <div className="mt-3 text-red-600 bg-red-100 p-3 rounded border border-red-300">
+            <strong>Error:</strong> {error}
+          </div>
+        )}
+
         <button
           type="submit"
           disabled={isLoading}
@@ -233,12 +239,6 @@ const ArticleEnglish = () => {
         >
           {isLoading ? 'Submitting...' : 'Submit'}
         </button>
-
-        {error && (
-          <div className="mt-3 text-red-600">
-            {error}
-          </div>
-        )}
       </form>
 
       {/* Toast Container */}

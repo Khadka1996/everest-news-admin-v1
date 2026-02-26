@@ -5,3 +5,88 @@
 /* Importing Google Fonts */
 @import url("https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Preeti&family=Kantipur&family=Mangal&display=swap");
+
+/* Global Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Global HTML and Body Styles for Proper Layout */
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Source Sans Pro', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Prevent scrollbars from appearing on outer container */
+.dashboard-container {
+  position: relative;
+  width: 100%;
+}
+
+/* Content area scrollbar */
+.routes-container {
+  background: inherit;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}
+
+/* Pro-sidebar menu scrolling fix */
+.pro-menu {
+  -webkit-overflow-scrolling: touch !important;
+  overflow: auto !important;
+}
+
+.pro-sidebar-inner {
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* Scrollbar styling for sidebar and content areas */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 600px) {
+  html, body, #root {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+  
+  .dashboard-container {
+    min-height: 100vh;
+    height: auto;
+    overflow: visible;
+  }
+  
+  .routes-container {
+    min-height: auto;
+    height: auto;
+    overflow: visible;
+  }
+}
+

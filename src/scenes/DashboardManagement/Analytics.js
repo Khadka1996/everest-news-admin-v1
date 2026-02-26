@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Bar } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+import { Bar, Line } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend } from 'chart.js';
 import API_URL from '../../config';
+import { CircularProgress, Box, TextField, MenuItem, Card, CardContent, Typography } from '@mui/material';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend);
 
 const convertToNepaliNumber = (number) => {
   const nepaliNumbers = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
@@ -12,141 +13,228 @@ const convertToNepaliNumber = (number) => {
 };
 
 const Analytics = () => {
-  const [articles, setArticles] = useState([]);
-  const [selectedArticle, setSelectedArticle] = useState(null);
-  const [headlineSearch, setHeadlineSearch] = useState('');
-  const [sortBy, setSortBy] = useState('lastUpdated');
-  const [currentPage, setCurrentPage] = useState(1);
-  const articlesPerPage = 10;
+  const [categoryData, setCategoryData] = useState(null);
+  const [deviceData, setDeviceData] = useState(null);
+  const [timeSeriesData, setTimeSeriesData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [days, setDays] = useState(30);
+  const [engagementData, setEngagementData] = useState(null);
 
   useEffect(() => {
-    axios.get(`${API_URL}/api/articles/all`)
-      .then(response => setArticles(response.data.data))
-      .catch(error => console.error('Error fetching articles:', error));
-  }, []);
+    fetchAnalytics();
+  }, [days]);
 
-  const handleHeadlineClick = async (articleId) => {
+  const fetchAnalytics = async () => {
+    setLoading(true);
     try {
-      const response = await axios.get(`${API_URL}/api/articles/byId/${articleId}`);
-      const articleDetails = response.data.data;
-      setSelectedArticle(articleDetails);
+      // Fetch category analytics
+      const categoryRes = await axios.get(`${API_URL}/api/analytics/categories?days=${days}`);
+      if (categoryRes.data.success) {
+        setCategoryData(categoryRes.data.categories);
+      }
+
+      // Fetch device analytics
+      const deviceRes = await axios.get(`${API_URL}/api/analytics/devices?days=${days}`);
+      if (deviceRes.data.success) {
+        setDeviceData(deviceRes.data.devices);
+      }
+
+      // Fetch engagement analytics
+      const engagementRes = await axios.get(`${API_URL}/api/analytics/engagement?days=${days}`);
+      if (engagementRes.data.success) {
+        const timeSpent = engagementRes.data.timeSpent?.[0] || {};
+        const scrollDepth = engagementRes.data.scrollDepth?.[0] || {};
+        setEngagementData({
+          totalViews: timeSpent.totalTime || 0,
+          uniqueSessions: 0,
+          avgTimeSpent: timeSpent.avgTime || 0,
+          avgScrollDepth: scrollDepth.avgScroll || 0,
+        });
+      }
+
+      // Fetch time series analytics
+      const timeRes = await axios.get(`${API_URL}/api/analytics/time-series?granularity=daily&days=${days}`);
+      if (timeRes.data.success) {
+        setTimeSeriesData(timeRes.data.data);
+      }
     } catch (error) {
-      console.error('Error fetching detailed article data:', error);
+      console.error('Error fetching analytics:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleClosePopup = () => {
-    setSelectedArticle(null);
-  };
-
-  const sortedArticles = articles.sort((a, b) => {
-    switch (sortBy) {
-      case 'lastUpdated':
-        return new Date(b.lastUpdated) - new Date(a.lastUpdated);
-      case 'topViews':
-        return b.views - a.views;
-      default:
-        return 0;
-    }
-  });
-
-  const indexOfLastArticle = currentPage * articlesPerPage;
-  const indexOfFirstArticle = indexOfLastArticle - articlesPerPage;
-  const currentArticles = sortedArticles.slice(indexOfFirstArticle, indexOfLastArticle);
-
-  const filteredArticles = currentArticles.filter(article =>
-    !headlineSearch || article.headline.toLowerCase().includes(headlineSearch.toLowerCase())
-  );
-
-  const pageNumbers = [];
-  for (let i = 1; i <= Math.ceil(sortedArticles.length / articlesPerPage); i++) {
-    pageNumbers.push(i);
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+        <CircularProgress />
+      </Box>
+    );
   }
 
-  // Aggregate data for total views and shares
-  const totalViews = articles.reduce((acc, article) => acc + article.views, 0);
-  const totalShares = articles.reduce((acc, article) => acc + article.shareCount, 0);
-
-  // Chart data for total views and shares
-  const overallChartData = {
-    labels: ['Total Views', 'Total Shares'],
+  // Category Analytics Chart
+  const categoryChartData = {
+    labels: categoryData?.map(cat => cat.category || 'Uncategorized') || [],
     datasets: [
       {
-        label: 'Counts',
-        data: [totalViews, totalShares],
-        backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(255, 99, 132, 0.6)'],
+        label: 'Total Views',
+        data: categoryData?.map(cat => cat.totalViews) || [],
+        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+        borderColor: 'rgba(75, 192, 192, 1)',
+        borderWidth: 1,
+      },
+      {
+        label: 'Unique Sessions',
+        data: categoryData?.map(cat => cat.uniqueSessions) || [],
+        backgroundColor: 'rgba(255, 99, 132, 0.6)',
+        borderColor: 'rgba(255, 99, 132, 1)',
+        borderWidth: 1,
+      },
+      {
+        label: 'Avg Time Spent (seconds)',
+        data: categoryData?.map(cat => cat.avgTimeSpent) || [],
+        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+        borderColor: 'rgba(54, 162, 235, 1)',
+        borderWidth: 1,
       },
     ],
   };
 
-  // Chart data for selected article views and shares
-  const articleChartData = {
-    labels: selectedArticle ? ['Views', 'Shares'] : [],
+  // Device Analytics Chart
+  const deviceChartData = {
+    labels: deviceData?.map(dev => dev._id || 'Unknown') || [],
     datasets: [
       {
-        label: 'Counts',
-        data: selectedArticle ? [selectedArticle.views, selectedArticle.shareCount] : [],
-        backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(255, 99, 132, 0.6)'],
+        label: 'Views by Device',
+        data: deviceData?.map(dev => dev.count) || [],
+        backgroundColor: [
+          'rgba(255, 159, 64, 0.6)',
+          'rgba(153, 102, 255, 0.6)',
+          'rgba(255, 205, 86, 0.6)',
+        ],
+        borderColor: [
+          'rgba(255, 159, 64, 1)',
+          'rgba(153, 102, 255, 1)',
+          'rgba(255, 205, 86, 1)',
+        ],
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  // Time Series Chart
+  const timeChartData = {
+    labels: timeSeriesData?.map(t => {
+      const date = new Date(t._id.year, t._id.month - 1, t._id.day);
+      return date.toLocaleDateString();
+    }) || [],
+    datasets: [
+      {
+        label: 'Daily Views',
+        data: timeSeriesData?.map(t => t.views) || [],
+        borderColor: 'rgba(75, 192, 192, 1)',
+        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+        borderWidth: 2,
+        fill: true,
       },
     ],
   };
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Analytics Dashboard</h1>
+    <Box sx={{ p: 2 }}>
+      <Typography variant="h5" gutterBottom sx={{ mb: 2 }}>
+        Analytics Dashboard
+      </Typography>
 
-      <div className="flex mb-4">
-        <input
-          type="text"
-          placeholder="Search by headline"
-          value={headlineSearch}
-          onChange={(e) => setHeadlineSearch(e.target.value)}
-          className="border border-gray-300 p-2 rounded mr-2"
-        />
-        <select onChange={(e) => setSortBy(e.target.value)} value={sortBy} className="border border-gray-300 p-2 rounded">
-          <option value="lastUpdated">Last Updated</option>
-          <option value="topViews">Top Views</option>
-        </select>
-      </div>
+      {/* Days Filter */}
+      <Box sx={{ mb: 2 }}>
+        <TextField
+          select
+          label="Period"
+          value={days}
+          onChange={(e) => setDays(Number(e.target.value))}
+          variant="outlined"
+          size="small"
+        >
+          <MenuItem value={7}>7 Days</MenuItem>
+          <MenuItem value={30}>30 Days</MenuItem>
+          <MenuItem value={60}>60 Days</MenuItem>
+          <MenuItem value={90}>90 Days</MenuItem>
+        </TextField>
+      </Box>
 
-      <h2 className="text-xl font-semibold mb-2">Articles:</h2>
-      {filteredArticles.map((article, index) => (
-        <div key={article._id} className="mb-2">
-          <p>{convertToNepaliNumber(indexOfFirstArticle + index + 1)}. </p>
-          <h3
-            className="text-lg font-medium cursor-pointer hover:text-blue-500"
-            onClick={() => handleHeadlineClick(article._id)}
-          >
-            {article.headline}
-          </h3>
-        </div>
-      ))}
+      {/* Category Analytics */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+          <Typography variant="subtitle2" gutterBottom>
+            Category Analytics
+          </Typography>
+          <Box sx={{ height: 250 }}>
+            <Bar data={categoryChartData} options={{ responsive: true, maintainAspectRatio: false }} />
+          </Box>
+          <Box sx={{ mt: 1, maxHeight: '150px', overflowY: 'auto' }}>
+            {categoryData?.map((cat) => (
+              <Typography key={cat.category} variant="caption" sx={{ display: 'block', mt: 0.5 }}>
+                <strong>{cat.category || 'Uncategorized'}:</strong> {cat.totalViews} views
+              </Typography>
+            ))}
+          </Box>
+        </CardContent>
+      </Card>
 
-      <div className="pagination mb-4">
-        {pageNumbers.map(number => (
-          <button key={number} onClick={() => setCurrentPage(number)} className="border border-gray-300 p-1 rounded mx-1">
-            {convertToNepaliNumber(number)}
-          </button>
-        ))}
-      </div>
-
-      <h2 className="text-xl font-semibold mb-2">Overall Analytics:</h2>
-      <Bar data={overallChartData} options={{ responsive: true }} className="mb-4" />
-
-      {selectedArticle && (
-        <div className="popup fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center bg-gray-800 bg-opacity-50">
-          <div className="popup-inner analytics-popup bg-white rounded p-4 shadow-lg">
-            <h2 className="text-xl font-bold">{selectedArticle.headline}</h2>
-            <div className="article-info mb-4">
-              <p className="views-info">Views: {convertToNepaliNumber(selectedArticle.views)}</p>
-              <p className="share-count-info">Share Count: {convertToNepaliNumber(selectedArticle.shareCount)}</p>
-            </div>
-            <Bar data={articleChartData} options={{ responsive: true }} />
-            <button onClick={handleClosePopup} className="mt-4 bg-blue-500 text-white p-2 rounded">Close</button>
-          </div>
-        </div>
+      {/* Device Analytics */}
+      {deviceData && deviceData.length > 0 && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+            <Typography variant="subtitle2" gutterBottom>
+              Device Analytics
+            </Typography>
+            <Box sx={{ height: 250 }}>
+              <Bar data={deviceChartData} options={{ responsive: true, maintainAspectRatio: false }} />
+            </Box>
+          </CardContent>
+        </Card>
       )}
-    </div>
+
+      {/* Engagement Stats */}
+      {engagementData && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+            <Typography variant="subtitle2" gutterBottom>
+              Engagement Metrics
+            </Typography>
+            <Box display="grid" gridTemplateColumns="repeat(auto-fit, minmax(120px, 1fr))" gap={1}>
+              <Box>
+                <Typography variant="caption" color="textSecondary">Total Time (s)</Typography>
+                <Typography variant="h6">{engagementData.totalViews?.toLocaleString() || 0}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="textSecondary">Avg Time (s)</Typography>
+                <Typography variant="h6">{engagementData.avgTimeSpent?.toFixed(1) || 0}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="textSecondary">Scroll Depth (%)</Typography>
+                <Typography variant="h6">{engagementData.avgScrollDepth?.toFixed(1) || 0}</Typography>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Time Series Analytics */}
+      {timeSeriesData && timeSeriesData.length > 0 && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+            <Typography variant="subtitle2" gutterBottom>
+              Daily Views Trend
+            </Typography>
+            <Box sx={{ height: 250 }}>
+              <Line data={timeChartData} options={{ responsive: true, maintainAspectRatio: false }} />
+            </Box>
+          </CardContent>
+        </Card>
+      )}
+    </Box>
   );
 };
 

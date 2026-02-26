@@ -11,6 +11,8 @@ import {
   InputLabel,
   Tooltip,
 } from '@mui/material';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import UpdateForm from './UpdateForm'; // Adjust the path as necessary
@@ -74,9 +76,11 @@ const NewsList = () => {
       await axios.delete(`${API_URL}/api/articles/${articleToDelete._id}`);
       setArticleToDelete(null);
       setShowDeleteModal(false);
+      toast.success('Article deleted successfully!');
       fetchArticles();
     } catch (error) {
       console.error('Error deleting article:', error);
+      toast.error(error.response?.data?.error || 'Error deleting article. Please try again.');
     }
   };
 
@@ -99,10 +103,12 @@ const NewsList = () => {
   const handleUpdateArticle = async (articleId, formData) => {
     try {
       await axios.put(`${API_URL}/api/articles/update/${articleId}`, formData);
+      toast.success('Article updated successfully!');
       fetchArticles(); // Refresh articles after update
       setShowUpdateModal(false);
     } catch (error) {
       console.error('Error updating article:', error);
+      toast.error(error.response?.data?.error || 'Error updating article. Please try again.');
     }
   };
 
@@ -231,6 +237,20 @@ const NewsList = () => {
         onClose={resetUpdateForm}
         article={articleToUpdate}
         onUpdate={handleUpdateArticle}
+      />
+
+      {/* Toast Notifications */}
+      <ToastContainer 
+        position="bottom-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
       />
     </div>
   );

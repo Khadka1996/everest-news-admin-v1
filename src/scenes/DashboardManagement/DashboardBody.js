@@ -33,19 +33,41 @@ import Article from '../NepaliArticles/Articles';
 import ArticleList from '../NepaliArticles/ArticleList';
 import AdminList from './AdminList';
 import UserList from './UserList';
+import { useMediaQuery } from '@mui/material';
 
 const DashboardBody = () => {
   const [theme, colorMode] = useMode();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   return (
     <ColorModeContext.Provider value={colorMode}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <div className="dashboard-container" style={{ display: 'flex' }}>
+        <div className="dashboard-container" style={{ 
+          display: 'flex',
+          height: 'calc(100vh - 0px)',
+          minHeight: '100vh',
+          width: '100%',
+          overflow: isMobile ? 'visible' : 'hidden',
+          flexDirection: 'row',
+        }}>
           <Sidebar />
-          <main className="content" style={{ flex: 1 }}>
+          <main className="content" style={{ 
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: '100vh',
+            overflow: isMobile ? 'visible' : 'hidden',
+            width: '100%',
+          }}>
             <Topbar />
-            <div className="routes-container" style={{ padding: '16px' }}>
+            <div className="routes-container" style={{ 
+              padding: '16px',
+              flex: isMobile ? '0 0 auto' : 1,
+              overflow: 'auto',
+              width: '100%',
+              minHeight: 'auto',
+            }}>
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/tags" element={<Tags />} />

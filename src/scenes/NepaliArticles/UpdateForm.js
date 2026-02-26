@@ -126,7 +126,8 @@ const UpdateForm = ({
     try {
       const response = await onUpdate(article._id, updatedArticle);
       if (response) {
-        toast.success('Article updated successfully!');
+        // Toast message is handled by onUpdate (handleUpdateArticle in ArticleList)
+        // Don't show duplicate success message here
         onClose();
         resetForm();
       } else {
@@ -134,7 +135,8 @@ const UpdateForm = ({
       }
     } catch (error) {
       console.error('Error updating article:', error);
-      toast.error('Error updating article. Please try again.');
+      // Error message is handled by onUpdate (handleUpdateArticle in ArticleList)
+      // Don't show duplicate error message here
     } finally {
       setIsUpdating(false);
     }
